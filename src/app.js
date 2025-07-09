@@ -54,8 +54,19 @@ app.patch("/user", async (req, res) => {
   const userId = req.body.userId;
   const data = req.body;
   console.log(data);
+
+  // Only allow specific fields to be updated
+  const ALLOWED_UPDATES = ["photoUrl", "bio", "gender", "age", "skills"];
+  const isUpdateAllowed = Object.keys(data).every((key) =>
+    ALLOWED_UPDATES.includes(key)
+  );
+
+  if (!isUpdateAllowed) {
+    return res.status(400).send("Invalid update fields");
+  }
+
   try {
-    await User.findByIdAndUpdate({ _id: userId }, data);
+    await User.findByIdAndUpdate(userId, data, { new: true });
     res.send("User updated successfully");
   } catch (err) {
     res.status(400).send("something went wrong");
