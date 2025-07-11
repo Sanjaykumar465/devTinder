@@ -6,6 +6,8 @@ const { ValidateSignUpData } = require("./utils/Validation");
 const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
+const { userAuth } = require("./middlewares/auth");
+const e = require("express");
 
 app.use(express.json());
 app.use(cookieParser());
@@ -47,7 +49,9 @@ app.post("/login", async (req, res) => {
       throw new Error("Invalid Credentials");
     }
 
-    const token = jwt.sign({ _id: user._id }, "DEV@tinder$3025");
+    const token = jwt.sign({ _id: user._id }, "DEV@tinder$3025", {
+      expiresIn: "1d",
+    });
 
     // ✅ Set token in cookie
     res.cookie("token", token, {});
@@ -57,21 +61,9 @@ app.post("/login", async (req, res) => {
     res.status(400).send("ERROR: " + err.message);
   }
 });
-app.get("/profile", async (req, res) => {
+app.get("/profile", userAuth, async (req, res) => {
   try {
-    const cookies = req.cookies;
-    const { token } = cookies;
-    if (!token) {
-      throw new Error("Invalid Token");
-    }
-    const decodedMessage = await jwt.verify(token, "DEV@tinder$3025");
-    const { _id } = decodedMessage;
-    console.log("Loged in user ID:", _id);
-
-    const user = await User.findById(_id);
-    if (!user) {
-      throw new Error("User does not exist");
-    }
+    const user = req.user; // User is set by userAuth middleware
 
     res.send(user);
   } catch (err) {
@@ -79,63 +71,12 @@ app.get("/profile", async (req, res) => {
   }
 });
 
-// app.get("/profile", async (req, res) => {
-//   const { token } = req.cookies;
+app.post("/sendConnectionRequest", userAuth, async (req, res) => {
+  const user = req.user;
 
-//   if (!token) {
-//     return res.status(401).send("Access denied. No token provided.");
-//   }
+  console.log("Connection request sent");
 
-//   try {
-//     const decoded = jwt.verify(token, "DEV@tinder$3025");
-//     const { _id } = decoded;
-//     console.log("Logged in user ID:", _id);
-//     res.send("Token verified. Profile access granted.");
-//   } catch (err) {
-//     res.status(401).send("Invalid or expired token.");
-//   }
-// });
-
-app.get("/feed", async (req, res) => {
-  try {
-    const user = await User.find({});
-    res.send(user);
-  } catch (err) {
-    res.status(400).send("something went wrong");
-  }
-});
-
-app.delete("/user", async (req, res) => {
-  const userId = req.body.userId;
-  try {
-    const user = await User.findByIdAndDelete(userId);
-    res.send("User deleted successfully");
-  } catch (err) {
-    res.status(400).send("something went wrong");
-  }
-});
-
-app.patch("/user", async (req, res) => {
-  const userId = req.body.userId;
-  const data = req.body;
-  console.log(data);
-
-  // Only allow specific fields to be updated
-  const ALLOWED_UPDATES = ["photoUrl", "bio", "gender", "age", "skills"];
-  const isUpdateAllowed = Object.keys(data).every((key) =>
-    ALLOWED_UPDATES.includes(key)
-  );
-
-  if (!isUpdateAllowed) {
-    return res.status(400).send("Invalid update fields");
-  }
-
-  try {
-    await User.findByIdAndUpdate(userId, data, { new: true });
-    res.send("User updated successfully");
-  } catch (err) {
-    res.status(400).send("something went wrong");
-  }
+  res.send(user.firstName + "Connection request sent");
 });
 
 connectDB()
