@@ -34,12 +34,12 @@ authRouter.post("/login", async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-      throw new Error("Invalid Credentials");
+      throw new Error("Invalid Credientials");
     }
 
     const isPasswordValid = await user.validatePassword(password);
     if (!isPasswordValid) {
-      throw new Error("Invalid Credentials");
+      throw new Error("Invalid Credintials");
     }
 
     // Call the correct method to get the JWT token
@@ -51,7 +51,7 @@ authRouter.post("/login", async (req, res) => {
       expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
 
-    res.send("Login Successful");
+    res.send(user);
   } catch (err) {
     res.status(400).send("ERROR: " + err.message);
   }
