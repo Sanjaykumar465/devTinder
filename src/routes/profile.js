@@ -7,10 +7,17 @@ const profileRouter = express.Router();
 profileRouter.get("/profile/view", userAuth, async (req, res) => {
   try {
     const user = req.user; // User is set by userAuth middleware
-
-    res.send(user);
+    
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+    
+    // Send user data as JSON
+    res.json(user);
+    
   } catch (err) {
-    res.status(401).send("ERROR: " + err.message);
+    console.error("Profile view error:", err);
+    res.status(500).json({ error: "Internal server error: " + err.message });
   }
 });
 
