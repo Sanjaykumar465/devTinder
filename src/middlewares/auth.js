@@ -3,7 +3,8 @@ const User = require("../models/user");
 
 const userAuth = async (req, res, next) => {
   try {
-    const { token } = req.cookies;
+    // Get token from cookies or headers (for socket.io compatibility)
+    const token = req.cookies.token || req.header('Authorization')?.replace('Bearer ', '') || req.header('token');
     
     // Check if token exists
     if (!token) {
@@ -13,11 +14,11 @@ const userAuth = async (req, res, next) => {
       });
     }
 
-    // Verify token
+    // Verify token with your JWT secret
     const decoded = jwt.verify(token, "DEV@tinder$3025");
     
-    // Find user
-    const user = await User.findById(decoded._id);
+    // Find user and exclude password
+    const user = await User.findById(decoded._id).select('-password');
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -30,6 +31,8 @@ const userAuth = async (req, res, next) => {
     next();
     
   } catch (err) {
+    console.error('Auth middleware error:', err);
+    
     // Handle different error cases
     if (err.name === "JsonWebTokenError") {
       return res.status(401).json({
